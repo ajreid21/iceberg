@@ -65,7 +65,8 @@ public class RewriteFileGroup {
 
   public RewriteDataFiles.FileGroupRewriteResult asResult() {
     Preconditions.checkState(addedFiles != null, "Cannot get result, Group was never rewritten");
-    return new BaseFileGroupRewriteResult(info, addedFiles.size(), fileScanTasks.size());
+    return new BaseFileGroupRewriteResult(
+        info, addedFiles.size(), fileScanTasks.size(), sizeInBytes());
   }
 
   @Override

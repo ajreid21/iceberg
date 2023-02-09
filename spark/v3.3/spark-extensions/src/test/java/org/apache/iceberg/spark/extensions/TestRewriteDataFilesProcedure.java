@@ -18,6 +18,7 @@
  */
 package org.apache.iceberg.spark.extensions;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -69,7 +70,7 @@ public class TestRewriteDataFilesProcedure extends SparkExtensionsTestBase {
   public void testRewriteDataFilesInEmptyTable() {
     createTable();
     List<Object[]> output = sql("CALL %s.system.rewrite_data_files('%s')", catalogName, tableIdent);
-    assertEquals("Procedure output must match", ImmutableList.of(row(0, 0)), output);
+    assertEquals("Procedure output must match", ImmutableList.of(row(0, 0, 0L)), output);
   }
 
   @Test
@@ -84,8 +85,8 @@ public class TestRewriteDataFilesProcedure extends SparkExtensionsTestBase {
 
     assertEquals(
         "Action should rewrite 10 data files and add 2 data files (one per partition) ",
-        ImmutableList.of(row(10, 2)),
-        output);
+        row(10, 2),
+        Arrays.copyOf(output.get(0), 2));
 
     List<Object[]> actualRecords = currentData();
     assertEquals("Data after compaction should not change", expectedRecords, actualRecords);
@@ -103,8 +104,8 @@ public class TestRewriteDataFilesProcedure extends SparkExtensionsTestBase {
 
     assertEquals(
         "Action should rewrite 10 data files and add 1 data files",
-        ImmutableList.of(row(10, 1)),
-        output);
+        row(10, 1),
+        Arrays.copyOf(output.get(0), 2));
 
     List<Object[]> actualRecords = currentData();
     assertEquals("Data after compaction should not change", expectedRecords, actualRecords);
@@ -125,7 +126,7 @@ public class TestRewriteDataFilesProcedure extends SparkExtensionsTestBase {
 
     assertEquals(
         "Action should rewrite 0 data files and add 0 data files",
-        ImmutableList.of(row(0, 0)),
+        ImmutableList.of(row(0, 0, 0L)),
         output);
 
     List<Object[]> actualRecords = currentData();
@@ -148,8 +149,8 @@ public class TestRewriteDataFilesProcedure extends SparkExtensionsTestBase {
 
     assertEquals(
         "Action should rewrite 10 data files and add 1 data files",
-        ImmutableList.of(row(10, 1)),
-        output);
+        row(10, 1),
+        Arrays.copyOf(output.get(0), 2));
 
     List<Object[]> actualRecords = currentData();
     assertEquals("Data after compaction should not change", expectedRecords, actualRecords);
@@ -170,8 +171,8 @@ public class TestRewriteDataFilesProcedure extends SparkExtensionsTestBase {
 
     assertEquals(
         "Action should rewrite 10 data files and add 1 data files",
-        ImmutableList.of(row(10, 1)),
-        output);
+        row(10, 1),
+        Arrays.copyOf(output.get(0), 2));
 
     // Due to Z_order, the data written will be in the below order.
     // As there is only one small output file, we can validate the query ordering (as it will not
@@ -207,8 +208,8 @@ public class TestRewriteDataFilesProcedure extends SparkExtensionsTestBase {
 
     assertEquals(
         "Action should rewrite 5 data files (containing c1 = 1) and add 1 data files",
-        ImmutableList.of(row(5, 1)),
-        output);
+        row(5, 1),
+        Arrays.copyOf(output.get(0), 2));
 
     List<Object[]> actualRecords = currentData();
     assertEquals("Data after compaction should not change", expectedRecords, actualRecords);
@@ -230,8 +231,8 @@ public class TestRewriteDataFilesProcedure extends SparkExtensionsTestBase {
     assertEquals(
         "Action should rewrite 5 data files from single matching partition"
             + "(containing c2 = bar) and add 1 data files",
-        ImmutableList.of(row(5, 1)),
-        output);
+        row(5, 1),
+        Arrays.copyOf(output.get(0), 2));
 
     List<Object[]> actualRecords = currentData();
     assertEquals("Data after compaction should not change", expectedRecords, actualRecords);
@@ -253,8 +254,8 @@ public class TestRewriteDataFilesProcedure extends SparkExtensionsTestBase {
     assertEquals(
         "Action should rewrite 5 data files from single matching partition"
             + "(containing c2 = bar) and add 1 data files",
-        ImmutableList.of(row(5, 1)),
-        output);
+        row(5, 1),
+        Arrays.copyOf(output.get(0), 2));
 
     List<Object[]> actualRecords = currentData();
     assertEquals("Data after compaction should not change", expectedRecords, actualRecords);
@@ -597,11 +598,11 @@ public class TestRewriteDataFilesProcedure extends SparkExtensionsTestBase {
         tableName);
   }
 
-  private void insertData(int filesCount) {
-    insertData(tableName, filesCount);
+  private long insertData(int filesCount) {
+    return insertData(tableName, filesCount);
   }
 
-  private void insertData(String table, int filesCount) {
+  private long insertData(String table, int filesCount) {
     ThreeColumnRecord record1 = new ThreeColumnRecord(1, "foo", null);
     ThreeColumnRecord record2 = new ThreeColumnRecord(2, "bar", null);
 
@@ -617,6 +618,7 @@ public class TestRewriteDataFilesProcedure extends SparkExtensionsTestBase {
         spark.createDataFrame(records, ThreeColumnRecord.class).repartition(filesCount);
     try {
       df.writeTo(table).append();
+      return 1681L * (filesCount / 2);
     } catch (org.apache.spark.sql.catalyst.analysis.NoSuchTableException e) {
       throw new RuntimeException(e);
     }
