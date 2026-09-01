@@ -358,12 +358,20 @@ public class Parquet {
           .columnStatsEnabled()
           .forEach(
               (colPath, isEnabled) -> {
+                Preconditions.checkArgument(
+                    "true".equalsIgnoreCase(isEnabled) || "false".equalsIgnoreCase(isEnabled),
+                    "Invalid value for table property %s%s: %s (expected true or false)",
+                    PARQUET_COLUMN_STATS_ENABLED_PREFIX,
+                    colPath,
+                    isEnabled);
+
                 String parquetColumnPath = colNameToParquetPathMap.get(colPath);
                 if (parquetColumnPath == null) {
                   LOG.warn("Skipping column statistics config for missing field: {}", colPath);
                   return;
                 }
-                withColumnStatsEnabled.accept(parquetColumnPath, Boolean.valueOf(isEnabled));
+
+                withColumnStatsEnabled.accept(parquetColumnPath, Boolean.parseBoolean(isEnabled));
               });
     }
 

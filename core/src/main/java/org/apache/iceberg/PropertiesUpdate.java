@@ -52,6 +52,7 @@ class PropertiesUpdate implements UpdateProperties {
     Preconditions.checkNotNull(value, "Value cannot be null");
     Preconditions.checkArgument(
         !removals.contains(key), "Cannot remove and update the same key: %s", key);
+    TablePropertyValidation.validateParquetColumnStatsProperty(key, value);
 
     updates.put(key, value);
 

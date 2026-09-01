@@ -289,6 +289,25 @@ public class TestParquet {
   }
 
   @Test
+  void rejectsInvalidColumnStatisticsValue() throws Exception {
+    Schema schema = new Schema(optional(1, "int_field", IntegerType.get()));
+    File file = createTempFile(temp);
+    String property = PARQUET_COLUMN_STATS_ENABLED_PREFIX + "int_field";
+
+    assertThatThrownBy(
+            () ->
+                write(
+                    file,
+                    schema,
+                    Collections.singletonMap(property, "truncate(16)"),
+                    ParquetAvroWriter::buildWriter,
+                    new GenericData.Record(AvroSchemaUtil.convert(schema.asStruct()))))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Invalid value for table property %s: truncate(16) (expected true or false)", property);
+  }
+
+  @Test
   public void testGeospatialFooterMetricsSkipParquetBounds() throws IOException {
     Schema binarySchema = new Schema(optional(1, "geom", Types.BinaryType.get()));
     Schema geometrySchema = new Schema(optional(1, "geom", Types.GeometryType.crs84()));

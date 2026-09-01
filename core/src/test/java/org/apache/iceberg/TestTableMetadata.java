@@ -1119,6 +1119,22 @@ public class TestTableMetadata {
   }
 
   @Test
+  void rejectsInvalidParquetColumnStatsValueForNewTable() {
+    String property = TableProperties.PARQUET_COLUMN_STATS_ENABLED_PREFIX + "id";
+
+    assertThatThrownBy(
+            () ->
+                TableMetadata.newTableMetadata(
+                    TEST_SCHEMA,
+                    PartitionSpec.unpartitioned(),
+                    TEST_LOCATION,
+                    ImmutableMap.of(property, "truncate(16)")))
+        .isInstanceOf(ValidationException.class)
+        .hasMessage(
+            "Invalid value for table property %s: truncate(16) (expected true or false)", property);
+  }
+
+  @Test
   public void testParserVersionValidation() throws Exception {
     String supportedVersion1 = readTableMetadataInputFile("TableMetadataV1Valid.json");
     TableMetadata parsed1 = TableMetadataParser.fromJson(supportedVersion1);
